@@ -14,9 +14,9 @@ if __name__ == "__main__":
              .appName("ElectionAnalysis")
              .master("local[*]")  # Use local Spark execution with all available cores
              .config("spark.jars.packages",
-                     "org.apache.spark:spark-sql-kafka-0-10_2.13:3.5.1")  # Spark-Kafka integration
+                     "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0")  # Spark-Kafka integration
              .config("spark.jars",
-                     "/Users/kad/Library/Mobile Documents/com~apple~CloudDocs/MYDOCS/TUTORIALS/data_engineering/end_to_end_projects/realtime_voting_system/postgresql-42.7.3.jar") # PostgreSQL driver
+                     "/Users/kad/Library/Mobile Documents/com~apple~CloudDocs/MYDOCS/TUTORIALS/data_engineering/end_to_end_projects/realtime_voting_system/postgresql-42.7.2.jar") # PostgreSQL driver
              .config("spark.sql.adaptive.enabled", "false")  # Disable adaptive query execution
              .getOrCreate())
 
@@ -77,7 +77,7 @@ if __name__ == "__main__":
         .format("kafka") \
         .option("kafka.bootstrap.servers", "localhost:9092") \
         .option("topic", "aggregated_votes_per_candidate") \
-        .option("checkpointLocation", "/Users/kad/Library/Mobile Documents/com~apple~CloudDocs/MYDOCS/TUTORIALS/data_engineering/end_to_end_projects/realtime_voting_system/checkpoints/checkpoint1") \
+        .option("checkpointLocation", "/Users/kad/Library/Mobile\ Documents/com\~apple\~CloudDocs/MYDOCS/TUTORIALS/data_engineering/end_to_end_projects/realtime_voting_system/checkpoints/checkpoint1") \
         .outputMode("update") \
         .start()
 
@@ -86,7 +86,7 @@ if __name__ == "__main__":
         .format("kafka") \
         .option("kafka.bootstrap.servers", "localhost:9092") \
         .option("topic", "aggregated_turnout_by_location") \
-        .option("checkpointLocation", "/Users/kad/Library/Mobile Documents/com~apple~CloudDocs/MYDOCS/TUTORIALS/data_engineering/end_to_end_projects/realtime_voting_system/checkpoints/checkpoint2") \
+        .option("checkpointLocation", "/Users/kad/Library/Mobile\ Documents/com\~apple\~CloudDocs/MYDOCS/TUTORIALS/data_engineering/end_to_end_projects/realtime_voting_system/checkpoints/checkpoint2") \
         .outputMode("update") \
         .start()
 
@@ -94,113 +94,114 @@ if __name__ == "__main__":
     votes_per_candidate_to_kafka.awaitTermination()
     turnout_by_location_to_kafka.awaitTermination()
 
-    candidate_schema = StructType([
-    ])
+    # candidate_schema = StructType([
+    # ])
     
-    voter_schema = StructType([
-    ])
+    # voter_schema = StructType([
+    # ])
 
-    #read candidate data from postgres
-    candidates_df = spark.read \
-        .format("jdbc") \
-        .option("url", "jdbc:postgresql://localhost:5432/voting") \
-        .option("dbtable", "candidates") \
-        .option("user", "postgres") \
-        .option("password", "postgres") \
-        .option("driver", "org.postgresql.Driver") \
-        .load()
+    # #read candidate data from postgres
+    # candidates_df = spark.read \
+    #     .format("jdbc") \
+    #     .option("url", "jdbc:postgresql://localhost:5433/voting") \
+    #     .option("dbtable", "candidates") \
+    #     .option("user", "postgres") \
+    #     .option("password", "postgres") \
+    #     .option("driver", "org.postgresql.Driver") \
+    #     .load()
     
-    candidates_df.persist(StorageLevel.MEMORY_ONLY)
+    # candidates_df.persist(StorageLevel.MEMORY_ONLY)
     
-    voters_df = spark.read \
-        .format("jdbc") \
-        .option("url", "jdbc:postgresql://localhost:5432/voting") \
-        .option("dbtable", "voters") \
-        .option("user", "postgres") \
-        .option("password", "postgres") \
-        .option("driver", "org.postgresql.Driver") \
-        .load()
+    # voters_df = spark.read \
+    #     .format("jdbc") \
+    #     .option("url", "jdbc:postgresql://localhost:5433/voting") \
+    #     .option("dbtable", "voters") \
+    #     .option("user", "postgres") \
+    #     .option("password", "postgres") \
+    #     .option("driver", "org.postgresql.Driver") \
+    #     .load()
 
-    voters_df = spark \
-        .readStream \
-        .format("kafka") \
-        .option("kafka.bootstrap.servers", "localhost:9092") \
-        .option("subscribe", "voters_topic") \
-        .option("startingOffsets", "earliest") \
-        .load() \
-        .selectExpr("CAST(value AS STRING)") \
-        .select(from_json(col("value"), voter_schema).alias("data")) \
-        .select("data.*")
+    # voters_df = spark \
+    #     .readStream \
+    #     .format("kafka") \
+    #     .option("kafka.bootstrap.servers", "localhost:9092") \
+    #     .option("subscribe", "voters_topic") \
+    #     .option("startingOffsets", "earliest") \
+    #     .load() \
+    #     .selectExpr("CAST(value AS STRING)") \
+    #     .select(from_json(col("value"), voter_schema).alias("data")) \
+    #     .select("data.*")
     
 
-    # Perform joins
-    enriched_votes_df = votes_df.alias("vote").join(voters_df.alias("voter"),
-                                                    expr("vote.voter_id == voter.voter_id"), "inner") \
-        .join(candidates_df.alias("candidate"), expr("vote.candidate_id == candidate.candidate_id"), "inner") \
-        .select(
-        col("vote.voter_id"), col("voter.name").alias("voter_name"), col("vote.candidate_id"),
-        col("voter.gender"), col("voting_time").cast(TimestampType()).alias("voting_time"),
-        col("voter.address_city").alias("voter_city"), col("voter.address_state").alias("voter_state"),
-        col("voter.address_country").alias("voter_country"),
-        col("voter.address_postcode").alias("voter_postcode"),
-        col("voter.registered_age").alias("voter_registered_age"),
-        col("candidate.name").alias("candidate_name"), col("candidate.party_affiliation"))
+    # # Perform joins
+    # enriched_votes_df = votes_df.alias("vote").join(voters_df.alias("voter"),
+    #                                                 expr("vote.voter_id == voter.voter_id"), "inner") \
+    #     .join(candidates_df.alias("candidate"), expr("vote.candidate_id == candidate.candidate_id"), "inner") \
+    #     .select(
+    #         col("vote.voter_id"), col("voter.name").alias("voter_name"), col("vote.candidate_id"),
+    #         col("voter.gender"), col("voting_time").cast(TimestampType()).alias("voting_time"),
+    #         col("voter.address_city").alias("voter_city"), col("voter.address_state").alias("voter_state"),
+    #         col("voter.address_country").alias("voter_country"),
+    #         col("voter.address_postcode").alias("voter_postcode"),
+    #         col("voter.registered_age").alias("voter_registered_age"),
+    #         col("candidate.name").alias("candidate_name"), col("candidate.party_affiliation")
+    #     )
     
-    # Voter turnout by age
-    turnout_by_age = enriched_votes_df.groupBy("registered_age").agg(count("*").alias("total_votes"))
+    # # Voter turnout by age
+    # turnout_by_age = enriched_votes_df.groupBy("registered_age").agg(count("*").alias("total_votes"))
     
-    # Voter turnout by gender (assuming gender data is available in voters_df)
-    turnout_by_gender = enriched_votes_df.groupBy("gender").agg(count("*").alias("total_votes"))
+    # # Voter turnout by gender (assuming gender data is available in voters_df)
+    # turnout_by_gender = enriched_votes_df.groupBy("gender").agg(count("*").alias("total_votes"))
     
-    # Voter turnout by location
+    # # Voter turnout by location
 
-    party_wise_votes = enriched_votes_df.groupBy("party_affiliation").agg(count("*").alias("total_votes"))
+    # party_wise_votes = enriched_votes_df.groupBy("party_affiliation").agg(count("*").alias("total_votes"))
     
-    votes_by_region = enriched_votes_df.groupBy("address.city").agg(count("*").alias("total_votes"))
+    # votes_by_region = enriched_votes_df.groupBy("address.city").agg(count("*").alias("total_votes"))
 
-    #Write to Kafka
-    enriched_votes_to_kafka = enriched_votes_df.selectExpr("to_json(struct(*)) AS value") \
-        .writeStream \
-        .format("kafka") \
-        .option("kafka.bootstrap.servers", "localhost:9092") \
-        .option("topic", "enriched_votes") \
-        .option("checkpointLocation", "/Users/kad/Library/Mobile Documents/com~apple~CloudDocs/MYDOCS/TUTORIALS/data_engineering/end_to_end_projects/realtime_voting_system/checkpoints/checkpoint1") \
-        .outputMode("update") \
-        .start()
-    turnout_by_gender_to_kafka = turnout_by_gender.selectExpr("to_json(struct(*)) AS value") \
-        .writeStream \
-        .format("kafka") \
-        .option("kafka.bootstrap.servers", "localhost:9092") \
-        .option("topic", "aggregated_turnout_by_gender") \
-        .option("checkpointLocation", "/Users/kad/Library/Mobile Documents/com~apple~CloudDocs/MYDOCS/TUTORIALS/data_engineering/end_to_end_projects/realtime_voting_system/checkpoints/checkpoint4") \
-        .outputMode("update") \
-        .start()
-    turnout_by_age_to_kafka = turnout_by_age.selectExpr("to_json(struct(*)) AS value") \
-        .writeStream \
-        .format("kafka") \
-        .option("kafka.bootstrap.servers", "localhost:9092") \
-        .option("topic", "aggregated_turnout_by_age") \
-        .option("checkpointLocation", "/Users/kad/Library/Mobile Documents/com~apple~CloudDocs/MYDOCS/TUTORIALS/data_engineering/end_to_end_projects/realtime_voting_system/checkpoints/checkpoint3") \
-        .outputMode("update") \
-        .start()
-    party_wise_votes_to_kafka = party_wise_votes.selectExpr("to_json(struct(*)) AS value") \
-        .writeStream \
-        .format("kafka") \
-        .option("kafka.bootstrap.servers", "localhost:9092") \
-        .option("topic", "aggregated_party_wise_votes") \
-        .option("checkpointLocation", "/Users/kad/Library/Mobile Documents/com~apple~CloudDocs/MYDOCS/TUTORIALS/data_engineering/end_to_end_projects/realtime_voting_system/checkpoints/checkpoint6") \
-        .outputMode("update") \
-        .start()
-    votes_by_region_to_kafka = votes_by_region.selectExpr("to_json(struct(*)) AS value") \
-        .writeStream \
-        .format("kafka") \
-        .option("kafka.bootstrap.servers", "localhost:9092") \
-        .option("topic", "aggregated_votes_by_region") \
-        .option("checkpointLocation", "/Users/kad/Library/Mobile Documents/com~apple~CloudDocs/MYDOCS/TUTORIALS/data_engineering/end_to_end_projects/realtime_voting_system/checkpoints/checkpoint7") \
-        .outputMode("update") \
-        .start()
-    enriched_votes_to_kafka.awaitTermination()
-    turnout_by_gender_to_kafka.awaitTermination()
-    votes_by_region_to_kafka.awaitTermination()
-    turnout_by_age_to_kafka.awaitTermination()
-    party_wise_votes_to_kafka.awaitTermination()
+    # #Write to Kafka
+    # enriched_votes_to_kafka = enriched_votes_df.selectExpr("to_json(struct(*)) AS value") \
+    #     .writeStream \
+    #     .format("kafka") \
+    #     .option("kafka.bootstrap.servers", "localhost:9092") \
+    #     .option("topic", "enriched_votes") \
+    #     .option("checkpointLocation", "/Users/kad/Library/Mobile\ Documents/com\~apple\~CloudDocs/MYDOCS/TUTORIALS/data_engineering/end_to_end_projects/realtime_voting_system/checkpoints/checkpoint1") \
+    #     .outputMode("update") \
+    #     .start()
+    # turnout_by_gender_to_kafka = turnout_by_gender.selectExpr("to_json(struct(*)) AS value") \
+    #     .writeStream \
+    #     .format("kafka") \
+    #     .option("kafka.bootstrap.servers", "localhost:9092") \
+    #     .option("topic", "aggregated_turnout_by_gender") \
+    #     .option("checkpointLocation", "/Users/kad/Library/Mobile\ Documents/com\~apple\~CloudDocs/MYDOCS/TUTORIALS/data_engineering/end_to_end_projects/realtime_voting_system/checkpoints/checkpoint4") \
+    #     .outputMode("update") \
+    #     .start()
+    # turnout_by_age_to_kafka = turnout_by_age.selectExpr("to_json(struct(*)) AS value") \
+    #     .writeStream \
+    #     .format("kafka") \
+    #     .option("kafka.bootstrap.servers", "localhost:9092") \
+    #     .option("topic", "aggregated_turnout_by_age") \
+    #     .option("checkpointLocation", "/Users/kad/Library/Mobile\ Documents/com\~apple\~CloudDocs/MYDOCS/TUTORIALS/data_engineering/end_to_end_projects/realtime_voting_system/checkpoints/checkpoint3") \
+    #     .outputMode("update") \
+    #     .start()
+    # party_wise_votes_to_kafka = party_wise_votes.selectExpr("to_json(struct(*)) AS value") \
+    #     .writeStream \
+    #     .format("kafka") \
+    #     .option("kafka.bootstrap.servers", "localhost:9092") \
+    #     .option("topic", "aggregated_party_wise_votes") \
+    #     .option("checkpointLocation", "/Users/kad/Library/Mobile\ Documents/com\~apple\~CloudDocs/MYDOCS/TUTORIALS/data_engineering/end_to_end_projects/realtime_voting_system/checkpoints/checkpoint6") \
+    #     .outputMode("update") \
+    #     .start()
+    # votes_by_region_to_kafka = votes_by_region.selectExpr("to_json(struct(*)) AS value") \
+    #     .writeStream \
+    #     .format("kafka") \
+    #     .option("kafka.bootstrap.servers", "localhost:9092") \
+    #     .option("topic", "aggregated_votes_by_region") \
+    #     .option("checkpointLocation", "/Users/kad/Library/Mobile\ Documents/com\~apple\~CloudDocs/MYDOCS/TUTORIALS/data_engineering/end_to_end_projects/realtime_voting_system/checkpoints/checkpoint7") \
+    #     .outputMode("update") \
+    #     .start()
+    # enriched_votes_to_kafka.awaitTermination()
+    # turnout_by_gender_to_kafka.awaitTermination()
+    # votes_by_region_to_kafka.awaitTermination()
+    # turnout_by_age_to_kafka.awaitTermination()
+    # party_wise_votes_to_kafka.awaitTermination()
