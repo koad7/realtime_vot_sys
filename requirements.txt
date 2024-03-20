@@ -1,0 +1,9 @@
+psycopg2-binary
+confluent_kafka
+requests
+simplejson
+pyspark
+streamlit
+matplotlib
+kafka-python
+streamlit_autorefresh
